@@ -74,6 +74,8 @@ void highscoreScreen();
 void drawHighScoreButton(int, int, int, int, int, char *);
 void highscoreKeys(unsigned char, int, int);
 void highscorePressed(int, int);
+
+void showPlayerName(int, int);
 // FUNCTION DEFINATIONS END HERE
 
 // GLOBAL VARIABLES BEGIN
@@ -128,10 +130,7 @@ void myInit(){
     glMatrixMode(GL_PROJECTION);
     gluOrtho2D(0, maxX, 0, maxY);
     srand(time(0));
-    // move = (rand() % 2 == 0)?USER_MOVE : ENEMY_MOVE;
-    // move = USER_MOVE;
-    // updateEnemyPosition();
-    //glOrtho(0, maxX, 0, maxY, -10, 10);
+
 }
 // MYINIT FUNCTION END
 
@@ -359,7 +358,7 @@ void drawButton(int xMin, int yMin, int xMax, int yMax, int state, char *s){
     glEnd();
 
     float border = 0.5;
-    if(state == CLICKED){
+    if(state == CLICKED) {
         border = 1;
     }
     glBegin(GL_POLYGON);
@@ -437,10 +436,21 @@ void battleScreen(){
 
     showScore(maxX-25, maxY-15);
     showHighScore(maxX-25, maxY-10);
-
+    showPlayerName(maxX-25, maxY-20);
     drawHighScoreButton(5, 80, 15, 85, 0, "HighScore");
     glFlush();
 
+}
+
+void showPlayerName(int x, int y) {
+    convertColorCode(114, 208, 245);
+    glColor3fv(colorCodeContainer);
+    char text[100];
+    // char *buffer = malloc(sizeof(char) * 32);
+    // buffer = integerToString(points);
+    strcpy(text, "Player : ");
+    strcat(text, playerName);
+    drawStrokeText(text, x-8, y-1, 0, 0.02, 0.02);
 }
 
 void showWhoseMove(int move) {
@@ -625,12 +635,12 @@ void drawMenuBar() {
     glVertex2d(0, maxY);
     glEnd();
 
-    convertColorCode(255, 255, 255);
-    glColor3fv(colorCodeContainer);
-    drawStrokeText("Save", 2, maxY-2, 0, 0.009, 0.009);
-    drawStrokeText("Move", 7, maxY-2, 0, 0.009, 0.009);
-    drawStrokeText("Speed", 12, maxY-2, 0, 0.008, 0.008);
-    drawStrokeText("Angle", 17, maxY-2, 0, 0.008, 0.008);
+    // convertColorCode(255, 255, 255);
+    // glColor3fv(colorCodeContainer);
+    // drawStrokeText("Save", 2, maxY-2, 0, 0.009, 0.009);
+    // drawStrokeText("Move", 7, maxY-2, 0, 0.009, 0.009);
+    // drawStrokeText("Speed", 12, maxY-2, 0, 0.008, 0.008);
+    // drawStrokeText("Angle", 17, maxY-2, 0, 0.008, 0.008);
     
 }
 
@@ -673,6 +683,8 @@ void keys(unsigned char key, int x, int y) {
         //     move = USER_MOVE;
         // }
         updateEnemyPosition();
+        battleScreen();
+    glutPostRedisplay();
         break;
     case 'w':
         if(move == USER_MOVE) {
@@ -681,6 +693,8 @@ void keys(unsigned char key, int x, int y) {
         // else {
         //     enemyAngle++;
         // }
+        battleScreen();
+    glutPostRedisplay();
         break;
     case 's':
         if(move == USER_MOVE) {
@@ -689,6 +703,8 @@ void keys(unsigned char key, int x, int y) {
         // else {
         //     enemyAngle--;
         // }
+        battleScreen();
+    glutPostRedisplay();
         break;
     case 'd':
        if(move == USER_MOVE) {
@@ -697,6 +713,8 @@ void keys(unsigned char key, int x, int y) {
         // else {
         //     enemyVelocity++;
         // }
+        battleScreen();
+    glutPostRedisplay();
         break;
     case 'a':
         if(move == USER_MOVE) {
@@ -705,10 +723,16 @@ void keys(unsigned char key, int x, int y) {
         // else {
         //     enemyVelocity--;
         // }
-        break;
-    }
-    battleScreen();
+        battleScreen();
     glutPostRedisplay();
+        break;
+    case '3':
+        glutDisplayFunc(gameOverScreen);
+        // glutMouseFunc()
+        glutKeyboardFunc(gameOverKeys);
+        glutPostRedisplay();
+    }
+    
 }
 
 void ball(int x, int y, int radius, float angle, int *flag, int move) {
@@ -821,16 +845,23 @@ void shootCanon(int move) {
 
     if(move == USER_MOVE) {
         extern int move;
-        move = ENEMY_MOVE;
-        battleScreen();
-        sleep(1);
-        updateEnemyPosition();
-        updateEnemyAngleSpeed();
-        battleScreen();
-        sleep(1);
-        shootCanon(move);
-        move = USER_MOVE;
-        battleScreen();
+
+        if(enemyHealth <= 0) {
+            glutKeyboardFunc(gameOverKeys);            
+            showWinnerScreen();
+        } else {
+            move = ENEMY_MOVE;
+            battleScreen();
+            sleep(1);
+            updateEnemyPosition();
+            updateEnemyAngleSpeed();
+            battleScreen();
+            sleep(1);
+            shootCanon(move);
+            move = USER_MOVE;
+            battleScreen();
+        }
+        
     }
 }
 
@@ -845,8 +876,8 @@ void updateEnemyPosition() {
 
 void updateEnemyAngleSpeed() {
     srand(time(0));
-    enemyAngle = (rand() % 20) + 50;
-    enemyVelocity = (rand() % 20) + 20;
+    enemyAngle = (rand() % 5) + 60;
+    enemyVelocity = (rand() % 5) + 26;
 }
 
 
@@ -868,6 +899,10 @@ void gameOverScreen() {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 0, 0, 1);
 
+    if(points >= highscore) {
+        highscore = points;
+        strcpy(highscorePlayer, playerName);
+    }
     drawStrokeText("GAME OVER", 30, maxY - 20, 0, 0.05, 0.05);
     char text[100];
     char *buffer = malloc(sizeof(char) * 32);
@@ -876,7 +911,7 @@ void gameOverScreen() {
     strcat(text, buffer);
     drawStrokeText(text, 40, maxY-40, 0, 0.02, 0.02);
 
-    buffer = integerToString(100);
+    buffer = integerToString(highscore);
 
     strcpy(text, "Current HighScore : ");
     strcat(text, buffer);
@@ -892,6 +927,11 @@ void winningScreen() {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 0, 0, 1);
 
+    if(points >= highscore) {
+        highscore = points;
+        strcpy(highscorePlayer, playerName);
+    }
+
     drawStrokeText("Computer Defeated!", 20, maxY - 20, 0, 0.05, 0.05);
     char text[100];
     char *buffer = malloc(sizeof(char) * 32);
@@ -900,7 +940,7 @@ void winningScreen() {
     strcat(text, buffer);
     drawStrokeText(text, 40, maxY-40, 0, 0.02, 0.02);
 
-    buffer = integerToString(100);
+    buffer = integerToString(highscore);
     strcpy(text, "Current HighScore : ");
     strcat(text, buffer);
     drawStrokeText(text, 35, maxY-50, 0, 0.02, 0.02);
